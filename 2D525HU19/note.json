@@ -1,0 +1,83 @@
+{
+  "paragraphs": [
+    {
+      "text": "#\n# This is a test of Keras copied from Keras Documentation\n#\n\nimport numpy as np\nfrom keras.models import Sequential\nfrom keras.layers import Dense, Dropout\n\n# Generate dummy data\nx_train \u003d np.random.random((1000, 20))\ny_train \u003d np.random.randint(2, size\u003d(1000, 1))\nx_test \u003d np.random.random((100, 20))\ny_test \u003d np.random.randint(2, size\u003d(100, 1))\n\nmodel \u003d Sequential()\nmodel.add(Dense(64, input_dim\u003d20, activation\u003d\u0027relu\u0027))\nmodel.add(Dropout(0.5))\nmodel.add(Dense(64, activation\u003d\u0027relu\u0027))\nmodel.add(Dropout(0.5))\nmodel.add(Dense(1, activation\u003d\u0027sigmoid\u0027))\n\nmodel.compile(loss\u003d\u0027binary_crossentropy\u0027,\n              optimizer\u003d\u0027rmsprop\u0027,\n              metrics\u003d[\u0027accuracy\u0027])\n\nmodel.fit(x_train, y_train,\n          epochs\u003d20,\n          batch_size\u003d128)\nscore \u003d model.evaluate(x_test, y_test, batch_size\u003d128)",
+      "user": "anonymous",
+      "dateUpdated": "Jan 15, 2018 6:08:22 PM",
+      "config": {
+        "colWidth": 12.0,
+        "enabled": true,
+        "results": {},
+        "editorSetting": {
+          "language": "python",
+          "editOnDblClick": false
+        },
+        "editorMode": "ace/mode/python"
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "apps": [],
+      "jobName": "paragraph_1516039637738_1631258434",
+      "id": "20180115-180717_389650636",
+      "dateCreated": "Jan 15, 2018 6:07:17 PM",
+      "status": "READY",
+      "progressUpdateIntervalMs": 500
+    },
+    {
+      "text": "#\n# This gets relevant data for one month of one location\n#\n\nimport psycopg2 as pg\nquery \u003d \"\"\"\nSELECT locations.id AS loc_id,\n    locations.x,\n    locations.y,\n    locations.name AS loc_name,\n    metadata.id AS feature_id,\n    metadata.name AS feature_name,\n\tmeasurements.period,\n    measurements.measured_value\nFROM measurements\nLEFT JOIN locations ON measurements.location \u003d locations.id\nLEFT JOIN metadata ON measurements.metadata \u003d metadata.id\nWHERE metadata.unit \u003d \u0027WATHTE\u0027 AND date_trunc(\u0027month\u0027, measurements.period) \u003d date \u00272017-03-01\u0027\nAND locations.id IN (71475)\nORDER BY measurements.period;\n\"\"\"\n\nwith pg.connect(host\u003d\"database\", dbname\u003d\"rws\", user\u003d\"postgres\", password\u003d\"postgres\") as connection:\n    with connection.cursor() as c:\n        c.execute(query)\n        [print(row) for row in c.fetchall()]",
+      "user": "anonymous",
+      "dateUpdated": "Jan 15, 2018 6:09:02 PM",
+      "config": {
+        "colWidth": 12.0,
+        "enabled": true,
+        "results": {},
+        "editorSetting": {
+          "language": "python",
+          "editOnDblClick": false
+        },
+        "editorMode": "ace/mode/python"
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": "OpenJDK 64-Bit Server VM warning: ignoring option MaxPermSize\u003d512m; support was removed in 8.0\nOpenJDK 64-Bit Server VM warning: INFO: os::commit_memory(0x00000000d5550000, 715849728, 0) failed; error\u003d\u0027Cannot allocate memory\u0027 (errno\u003d12)\n#\n# There is insufficient memory for the Java Runtime Environment to continue.\n# Native memory allocation (mmap) failed to map 715849728 bytes for committing reserved memory.\n# An error report file with more information is saved as:\n# /usr/local/zeppelin/hs_err_pid68.log\n",
+      "apps": [],
+      "jobName": "paragraph_1516039702347_-44414970",
+      "id": "20180115-180822_1171034226",
+      "dateCreated": "Jan 15, 2018 6:08:22 PM",
+      "dateStarted": "Jan 15, 2018 6:09:02 PM",
+      "dateFinished": "Jan 15, 2018 6:09:03 PM",
+      "status": "ERROR",
+      "errorMessage": "org.apache.zeppelin.interpreter.InterpreterException: OpenJDK 64-Bit Server VM warning: ignoring option MaxPermSize\u003d512m; support was removed in 8.0\nOpenJDK 64-Bit Server VM warning: INFO: os::commit_memory(0x00000000d5550000, 715849728, 0) failed; error\u003d\u0027Cannot allocate memory\u0027 (errno\u003d12)\n#\n# There is insufficient memory for the Java Runtime Environment to continue.\n# Native memory allocation (mmap) failed to map 715849728 bytes for committing reserved memory.\n# An error report file with more information is saved as:\n# /usr/local/zeppelin/hs_err_pid68.log\n\n\tat org.apache.zeppelin.interpreter.remote.RemoteInterpreterManagedProcess.start(RemoteInterpreterManagedProcess.java:143)\n\tat org.apache.zeppelin.interpreter.remote.RemoteInterpreterProcess.reference(RemoteInterpreterProcess.java:73)\n\tat org.apache.zeppelin.interpreter.remote.RemoteInterpreter.open(RemoteInterpreter.java:265)\n\tat org.apache.zeppelin.interpreter.remote.RemoteInterpreter.getFormType(RemoteInterpreter.java:430)\n\tat org.apache.zeppelin.interpreter.LazyOpenInterpreter.getFormType(LazyOpenInterpreter.java:111)\n\tat org.apache.zeppelin.notebook.Paragraph.jobRun(Paragraph.java:387)\n\tat org.apache.zeppelin.scheduler.Job.run(Job.java:175)\n\tat org.apache.zeppelin.scheduler.RemoteScheduler$JobRunner.run(RemoteScheduler.java:329)\n\tat java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:511)\n\tat java.util.concurrent.FutureTask.run(FutureTask.java:266)\n\tat java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.access$201(ScheduledThreadPoolExecutor.java:180)\n\tat java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.run(ScheduledThreadPoolExecutor.java:293)\n\tat java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)\n\tat java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)\n\tat java.lang.Thread.run(Thread.java:748)\n",
+      "progressUpdateIntervalMs": 500
+    },
+    {
+      "user": "anonymous",
+      "config": {},
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "apps": [],
+      "jobName": "paragraph_1516039742556_1478867222",
+      "id": "20180115-180902_106710317",
+      "dateCreated": "Jan 15, 2018 6:09:02 PM",
+      "status": "READY",
+      "progressUpdateIntervalMs": 500
+    }
+  ],
+  "name": "machine learning",
+  "id": "2D525HU19",
+  "angularObjects": {
+    "2D6JZEKFE:shared_process": [],
+    "2D3TRB4NV:shared_process": [],
+    "2D4M2Q8VM:shared_process": [],
+    "2D649WNQE:shared_process": [],
+    "2D394WKV1:shared_process": []
+  },
+  "config": {},
+  "info": {}
+}
