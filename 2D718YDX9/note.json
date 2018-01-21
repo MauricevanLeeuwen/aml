@@ -1,0 +1,145 @@
+{
+  "paragraphs": [
+    {
+      "text": "#\n# This gets relevant data for one month of one location\n# Creates a dict that countains measurements per location.\n# \nimport pandas as pd\nimport psycopg2 as pg\nquery \u003d \"\"\"\nSELECT locations.id AS loc_id,\n    locations.x,\n    locations.y,\n    locations.name AS loc_name,\n    metadata.id AS feature_id,\n    metadata.name AS feature_name,\n\tmeasurements.period,\n    measurements.measured_value\nFROM measurements\nLEFT JOIN locations ON measurements.location \u003d locations.id\nLEFT JOIN metadata ON measurements.metadata \u003d metadata.id\nWHERE metadata.unit \u003d \u0027WATHTE\u0027 AND date_trunc(\u0027year\u0027, measurements.period) \u003d date \u00272017-01-01\u0027\nAND locations.id \u003d 89615\nORDER BY measurements.period;\n\"\"\"\n\ndf \u003d None\nwith pg.connect(host\u003d\"database\", dbname\u003d\"rws\", user\u003d\"postgres\", password\u003d\"postgres\") as connection:\n    with connection.cursor() as c:\n        c.execute(query)\n        \n        locations \u003d []\n        values \u003d []\n        periods \u003d []\n        \n        for record in c:\n            val \u003d record[7]\n            time \u003d record[6]\n            loc \u003d record[0]\n\n            if val\u003c999999999:\n                locations+\u003d[loc]\n                values+\u003d[float(val)]\n                periods+\u003d[time]\n\n        df \u003d pd.DataFrame({\u0027location\u0027: locations, \u0027value\u0027: values, \u0027periods\u0027: periods}, index\u003dperiods)\n \n",
+      "user": "anonymous",
+      "dateUpdated": "Jan 20, 2018 11:03:55 AM",
+      "config": {
+        "colWidth": 12.0,
+        "enabled": true,
+        "results": {},
+        "editorSetting": {
+          "language": "python",
+          "editOnDblClick": false
+        },
+        "editorMode": "ace/mode/python"
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": []
+      },
+      "apps": [],
+      "jobName": "paragraph_1516441183896_99358070",
+      "id": "20180120-093943_1757862253",
+      "dateCreated": "Jan 20, 2018 9:39:43 AM",
+      "dateStarted": "Jan 20, 2018 11:03:44 AM",
+      "dateFinished": "Jan 20, 2018 11:03:44 AM",
+      "status": "FINISHED",
+      "progressUpdateIntervalMs": 500
+    },
+    {
+      "text": "#\n# Window \n#\n#np.array([v for loc, v in res.items() if loc \u003d\u003d 84001])[0][2]\n# leaveout d \u003e 1000 ? Decimal(\u0027999999999.0\u0027)\n\nimport numpy as np\ndata \u003d df[\u0027value\u0027].groupby([df.index.year, df.index.month, df.index.day, df.index.hour]).agg([np.mean])\n\ndef x_n(data, n\u003d0, window_size\u003d10, offset\u003d100):\n\n    end \u003d window_size + n\n    while end+offset \u003c\u003d len(data):\n        yield np.array([[v] for v in pd.concat([ data[\u0027mean\u0027].iloc[n:end], data[\u0027mean\u0027].iloc[-1+end+offset:end+offset]])])\n        n+\u003d1\n        end \u003d window_size + n\n\n\ntrain_x \u003d []\ntrain_y \u003d []\ntest_x \u003d []\ntest_y \u003d []\nfor window in x_n(data):\n    train_x+\u003d [window[:-1]]\n    train_y+\u003d [window[-1:]]\n\ntest_size \u003d int(0.20*len(train_x))\ntest_x \u003d np.array(train_x[-test_size:])\ntest_y \u003d np.array([v[0] for v in train_y[-test_size:]])\ntrain_x \u003d np.array(train_x[:-test_size])\ntrain_y \u003d np.array([v[0] for v in train_y[:-test_size]])\nprint(\"train set size\", len(train_x))",
+      "user": "anonymous",
+      "dateUpdated": "Jan 20, 2018 11:29:35 AM",
+      "config": {
+        "colWidth": 12.0,
+        "enabled": true,
+        "results": {},
+        "editorSetting": {
+          "language": "python",
+          "editOnDblClick": false
+        },
+        "editorMode": "ace/mode/python"
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "train set size 297\n"
+          }
+        ]
+      },
+      "apps": [],
+      "jobName": "paragraph_1516442348733_-991625884",
+      "id": "20180120-095908_1745629461",
+      "dateCreated": "Jan 20, 2018 9:59:08 AM",
+      "dateStarted": "Jan 20, 2018 11:29:35 AM",
+      "dateFinished": "Jan 20, 2018 11:29:36 AM",
+      "status": "FINISHED",
+      "progressUpdateIntervalMs": 500
+    },
+    {
+      "title": "LSTM Model",
+      "text": "# MODEL 3\n# Recurrent Neural Network - LSTM\n\nimport numpy as np\nfrom keras.models import Sequential\nfrom keras.layers import Dense, Dropout, LSTM\n\n\nmodel \u003d Sequential()\nmodel.add(LSTM(10, input_shape\u003dtrain_x.shape[1:], activation\u003d\u0027relu\u0027))     #hidden layer\nmodel.add(Dense(1, activation\u003d\u0027linear\u0027))                        #output layer\n\nmodel.compile(loss\u003d\u0027mean_squared_error\u0027,\n              optimizer\u003d\u0027adam\u0027,\n              metrics\u003d[\u0027mae\u0027])\n\nmodel.fit(train_x, train_y,\n          epochs\u003d8,\n          batch_size\u003d8)\n#score \u003d model.evaluate(test_x, test_y, batch_size\u003d128)\n#print(score)",
+      "user": "anonymous",
+      "dateUpdated": "Jan 20, 2018 11:31:44 AM",
+      "config": {
+        "colWidth": 12.0,
+        "enabled": true,
+        "results": {},
+        "editorSetting": {
+          "language": "python",
+          "editOnDblClick": false
+        },
+        "editorMode": "ace/mode/python",
+        "title": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "Epoch 1/8\n\n  8/297 [..............................] - ETA: 31s - loss: 37.2158 - mean_absolute_error: 4.5288\n 40/297 [\u003d\u003d\u003d\u003e..........................] - ETA: 5s - loss: 26.9731 - mean_absolute_error: 3.9548 \n 72/297 [\u003d\u003d\u003d\u003d\u003d\u003d\u003e.......................] - ETA: 3s - loss: 26.0094 - mean_absolute_error: 4.0653\n104/297 [\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003e....................] - ETA: 1s - loss: 23.5219 - mean_absolute_error: 3.6902\n136/297 [\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003e.................] - ETA: 1s - loss: 22.3800 - mean_absolute_error: 3.5918\n168/297 [\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003e..............] - ETA: 0s - loss: 22.3438 - mean_absolute_error: 3.5949\n200/297 [\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003e..........] - ETA: 0s - loss: 22.4696 - mean_absolute_error: 3.5727\n232/297 [\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003e.......] - ETA: 0s - loss: 22.2240 - mean_absolute_error: 3.5460\n264/297 [\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003e....] - ETA: 0s - loss: 22.1784 - mean_absolute_error: 3.5442\n297/297 [\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d] - 1s 5ms/step - loss: 22.8695 - mean_absolute_error: 3.6073\nEpoch 2/8\n\n  8/297 [..............................] - ETA: 0s - loss: 23.4308 - mean_absolute_error: 3.9224\n 40/297 [\u003d\u003d\u003d\u003e..........................] - ETA: 0s - loss: 21.3160 - mean_absolute_error: 3.5811\n 72/297 [\u003d\u003d\u003d\u003d\u003d\u003d\u003e.......................] - ETA: 0s - loss: 22.6296 - mean_absolute_error: 3.6246\n104/297 [\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003e....................] - ETA: 0s - loss: 25.4854 - mean_absolute_error: 3.8381\n136/297 [\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003e.................] - ETA: 0s - loss: 23.6636 - mean_absolute_error: 3.6984\n168/297 [\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003e..............] - ETA: 0s - loss: 21.9994 - mean_absolute_error: 3.5915\n200/297 [\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003e..........] - ETA: 0s - loss: 21.3020 - mean_absolute_error: 3.4985\n232/297 [\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003e.......] - ETA: 0s - loss: 21.2862 - mean_absolute_error: 3.5245\n248/297 [\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003e.....] - ETA: 0s - loss: 21.5603 - mean_absolute_error: 3.5278\n272/297 [\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003e...] - ETA: 0s - loss: 21.9425 - mean_absolute_error: 3.5692\n297/297 [\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d] - 1s 2ms/step - loss: 21.3056 - mean_absolute_error: 3.4943\nEpoch 3/8\n\n  8/297 [..............................] - ETA: 0s - loss: 40.8204 - mean_absolute_error: 5.7867\n 40/297 [\u003d\u003d\u003d\u003e..........................] - ETA: 0s - loss: 26.9741 - mean_absolute_error: 4.3041\n 72/297 [\u003d\u003d\u003d\u003d\u003d\u003d\u003e.......................] - ETA: 0s - loss: 23.3090 - mean_absolute_error: 3.8263\n 88/297 [\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003e......................] - ETA: 0s - loss: 22.3334 - mean_absolute_error: 3.6932\n112/297 [\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003e...................] - ETA: 0s - loss: 22.1962 - mean_absolute_error: 3.6635\n144/297 [\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003e................] - ETA: 0s - loss: 21.2408 - mean_absolute_error: 3.5690\n168/297 [\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003e..............] - ETA: 0s - loss: 21.5597 - mean_absolute_error: 3.6399\n200/297 [\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003e..........] - ETA: 0s - loss: 21.2907 - mean_absolute_error: 3.5874\n224/297 [\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003e........] - ETA: 0s - loss: 21.0372 - mean_absolute_error: 3.5401\n240/297 [\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003e......] - ETA: 0s - loss: 20.8484 - mean_absolute_error: 3.5276\n264/297 [\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003e....] - ETA: 0s - loss: 20.3689 - mean_absolute_error: 3.4836\n296/297 [\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003e.] - ETA: 0s - loss: 20.3764 - mean_absolute_error: 3.4928\n297/297 [\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d] - 1s 2ms/step - loss: 20.3102 - mean_absolute_error: 3.4839\nEpoch 4/8\n\n  8/297 [..............................] - ETA: 0s - loss: 17.2858 - mean_absolute_error: 3.3821\n 40/297 [\u003d\u003d\u003d\u003e..........................] - ETA: 0s - loss: 22.1477 - mean_absolute_error: 3.7340\n 72/297 [\u003d\u003d\u003d\u003d\u003d\u003d\u003e.......................] - ETA: 0s - loss: 22.5553 - mean_absolute_error: 3.7309\n104/297 [\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003e....................] - ETA: 0s - loss: 23.1514 - mean_absolute_error: 3.7244\n136/297 [\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003e.................] - ETA: 0s - loss: 20.6545 - mean_absolute_error: 3.5490\n168/297 [\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003e..............] - ETA: 0s - loss: 20.9426 - mean_absolute_error: 3.5830\n200/297 [\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003e..........] - ETA: 0s - loss: 19.8080 - mean_absolute_error: 3.4176\n232/297 [\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003e.......] - ETA: 0s - loss: 20.4319 - mean_absolute_error: 3.4669\n264/297 [\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003e....] - ETA: 0s - loss: 20.2360 - mean_absolute_error: 3.4539\n296/297 [\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003e.] - ETA: 0s - loss: 19.6685 - mean_absolute_error: 3.3902\n297/297 [\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d] - 1s 2ms/step - loss: 19.6040 - mean_absolute_error: 3.3811\nEpoch 5/8\n\n  8/297 [..............................] - ETA: 0s - loss: 17.0562 - mean_absolute_error: 3.0923\n 40/297 [\u003d\u003d\u003d\u003e..........................] - ETA: 0s - loss: 16.8175 - mean_absolute_error: 3.0702\n 72/297 [\u003d\u003d\u003d\u003d\u003d\u003d\u003e.......................] - ETA: 0s - loss: 18.7119 - mean_absolute_error: 3.3430\n104/297 [\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003e....................] - ETA: 0s - loss: 19.3177 - mean_absolute_error: 3.3632\n128/297 [\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003e..................] - ETA: 0s - loss: 18.2960 - mean_absolute_error: 3.2384\n160/297 [\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003e..............] - ETA: 0s - loss: 17.7198 - mean_absolute_error: 3.2331\n192/297 [\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003e...........] - ETA: 0s - loss: 17.8857 - mean_absolute_error: 3.2885\n224/297 [\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003e........] - ETA: 0s - loss: 18.6177 - mean_absolute_error: 3.3621\n256/297 [\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003e.....] - ETA: 0s - loss: 19.0604 - mean_absolute_error: 3.4096\n288/297 [\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003e.] - ETA: 0s - loss: 18.6269 - mean_absolute_error: 3.3313\n297/297 [\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d] - 1s 2ms/step - loss: 18.7716 - mean_absolute_error: 3.3437\nEpoch 6/8\n\n  8/297 [..............................] - ETA: 0s - loss: 12.5908 - mean_absolute_error: 2.6570\n 48/297 [\u003d\u003d\u003d\u003e..........................] - ETA: 0s - loss: 17.2957 - mean_absolute_error: 3.3801\n 88/297 [\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003e......................] - ETA: 0s - loss: 19.2284 - mean_absolute_error: 3.4117\n128/297 [\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003e..................] - ETA: 0s - loss: 21.2752 - mean_absolute_error: 3.5993\n168/297 [\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003e..............] - ETA: 0s - loss: 20.6488 - mean_absolute_error: 3.5541\n216/297 [\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003e.........] - ETA: 0s - loss: 19.2670 - mean_absolute_error: 3.4049\n256/297 [\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003e.....] - ETA: 0s - loss: 18.0162 - mean_absolute_error: 3.2529\n296/297 [\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003e.] - ETA: 0s - loss: 17.6772 - mean_absolute_error: 3.2234\n297/297 [\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d] - 0s 1ms/step - loss: 17.6237 - mean_absolute_error: 3.2171\nEpoch 7/8\n\n  8/297 [..............................] - ETA: 0s - loss: 21.4678 - mean_absolute_error: 3.6791\n 56/297 [\u003d\u003d\u003d\u003d\u003e.........................] - ETA: 0s - loss: 21.4225 - mean_absolute_error: 3.4430\n 96/297 [\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003e.....................] - ETA: 0s - loss: 18.6205 - mean_absolute_error: 3.2965\n144/297 [\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003e................] - ETA: 0s - loss: 18.2096 - mean_absolute_error: 3.2958\n168/297 [\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003e..............] - ETA: 0s - loss: 17.5454 - mean_absolute_error: 3.2379\n192/297 [\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003e...........] - ETA: 0s - loss: 17.1191 - mean_absolute_error: 3.2240\n232/297 [\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003e.......] - ETA: 0s - loss: 16.0119 - mean_absolute_error: 3.0732\n272/297 [\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003e...] - ETA: 0s - loss: 16.0592 - mean_absolute_error: 3.1022\n297/297 [\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d] - 0s 2ms/step - loss: 16.0995 - mean_absolute_error: 3.0987\nEpoch 8/8\n\n  8/297 [..............................] - ETA: 0s - loss: 18.5383 - mean_absolute_error: 3.3339\n 48/297 [\u003d\u003d\u003d\u003e..........................] - ETA: 0s - loss: 17.3425 - mean_absolute_error: 3.2678\n 88/297 [\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003e......................] - ETA: 0s - loss: 14.1728 - mean_absolute_error: 2.9900\n128/297 [\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003e..................] - ETA: 0s - loss: 13.9898 - mean_absolute_error: 3.0476\n168/297 [\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003e..............] - ETA: 0s - loss: 13.7281 - mean_absolute_error: 3.0282\n208/297 [\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003e.........] - ETA: 0s - loss: 13.9638 - mean_absolute_error: 3.0031\n248/297 [\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003e.....] - ETA: 0s - loss: 13.8900 - mean_absolute_error: 2.9992\n288/297 [\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003e.] - ETA: 0s - loss: 13.3492 - mean_absolute_error: 2.9475\n297/297 [\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d] - 0s 1ms/step - loss: 13.1150 - mean_absolute_error: 2.9088\n\u003ckeras.callbacks.History object at 0x7f350effb550\u003e\n"
+          }
+        ]
+      },
+      "apps": [],
+      "jobName": "paragraph_1516442693913_-1200437268",
+      "id": "20180120-100453_1615670560",
+      "dateCreated": "Jan 20, 2018 10:04:53 AM",
+      "dateStarted": "Jan 20, 2018 11:30:06 AM",
+      "dateFinished": "Jan 20, 2018 11:30:12 AM",
+      "status": "FINISHED",
+      "progressUpdateIntervalMs": 500
+    },
+    {
+      "text": "\n",
+      "user": "anonymous",
+      "dateUpdated": "Jan 20, 2018 11:30:39 AM",
+      "config": {
+        "colWidth": 12.0,
+        "enabled": true,
+        "results": {},
+        "editorSetting": {
+          "language": "python",
+          "editOnDblClick": false
+        },
+        "editorMode": "ace/mode/python"
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "apps": [],
+      "jobName": "paragraph_1516442713559_1506686642",
+      "id": "20180120-100513_204872308",
+      "dateCreated": "Jan 20, 2018 10:05:13 AM",
+      "status": "READY",
+      "progressUpdateIntervalMs": 500
+    }
+  ],
+  "name": "03. Recurrent Network",
+  "id": "2D718YDX9",
+  "angularObjects": {
+    "2D347UDBN:shared_process": [],
+    "2D3YDUUMA:shared_process": [],
+    "2D6ENP41A::2D718YDX9": [],
+    "2D67F152B:shared_process": [],
+    "2D3BQB56A:shared_process": []
+  },
+  "config": {},
+  "info": {}
+}

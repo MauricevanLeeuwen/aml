@@ -1,0 +1,40 @@
+{
+  "paragraphs": [
+    {
+      "text": "#\n# Mean + Var of a location, compare to mean+var of prediction? To see how \u0027bad\u0027 the error is relatively\n#\n#\n",
+      "user": "anonymous",
+      "dateUpdated": "Jan 20, 2018 11:36:01 AM",
+      "config": {
+        "colWidth": 12.0,
+        "enabled": true,
+        "results": {},
+        "editorSetting": {
+          "language": "python",
+          "editOnDblClick": false
+        },
+        "editorMode": "ace/mode/python"
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "apps": [],
+      "jobName": "paragraph_1516441203069_267893412",
+      "id": "20180120-094003_1404563182",
+      "dateCreated": "Jan 20, 2018 9:40:03 AM",
+      "status": "READY",
+      "progressUpdateIntervalMs": 500
+    }
+  ],
+  "name": "04. Evaluation + Comparison",
+  "id": "2D6DFXX5W",
+  "angularObjects": {
+    "2D347UDBN:shared_process": [],
+    "2D3YDUUMA:shared_process": [],
+    "2D67F152B:shared_process": [],
+    "2D3BQB56A:shared_process": [],
+    "2D6ENP41A::2D6DFXX5W": []
+  },
+  "config": {},
+  "info": {}
+}
