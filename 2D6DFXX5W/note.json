@@ -24,6 +24,31 @@
       "dateCreated": "Jan 20, 2018 9:40:03 AM",
       "status": "READY",
       "progressUpdateIntervalMs": 500
+    },
+    {
+      "text": "#\n# Predict 24hrs (hourly) into the future\n# Predict 14 days (daily) into the future:",
+      "user": "anonymous",
+      "dateUpdated": "Jan 24, 2018 12:52:14 PM",
+      "config": {
+        "colWidth": 12.0,
+        "enabled": true,
+        "results": {},
+        "editorSetting": {
+          "language": "python",
+          "editOnDblClick": false
+        },
+        "editorMode": "ace/mode/python"
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "apps": [],
+      "jobName": "paragraph_1516798304316_-1532493758",
+      "id": "20180124-125144_461516980",
+      "dateCreated": "Jan 24, 2018 12:51:44 PM",
+      "status": "READY",
+      "progressUpdateIntervalMs": 500
     }
   ],
   "name": "04. Evaluation + Comparison",
